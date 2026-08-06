@@ -1,0 +1,6 @@
+{
+  "name": "Windows Clipboard MIME Inspector",
+  "description": "A developer tool to inspect, analyze, and debug Windows Clipboard MIME formats, raw headers, text structures, and binary payloads.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

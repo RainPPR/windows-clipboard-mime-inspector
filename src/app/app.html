@@ -1,0 +1,89 @@
+<div class="min-h-screen bg-zinc-950 text-zinc-100 font-sans selection:bg-indigo-500 selection:text-white pb-16">
+  
+  <!-- App Header -->
+  <app-header />
+
+  <!-- Main Container -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-6">
+
+    <!-- Clipboard Input & Paste Area -->
+    <app-clipboard-input />
+
+    <!-- Format Summary & Filter Toolbar -->
+    @if (currentSession(); as session) {
+      <app-format-summary />
+
+      <!-- Formats List Grid / Cards -->
+      @if (filteredFormats().length > 0) {
+        <div class="space-y-4">
+          @for (format of filteredFormats(); track format.id) {
+            <app-format-card [format]="format" />
+          }
+        </div>
+      } @else {
+        <!-- Search / Filter Empty State -->
+        <div class="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-12 text-center space-y-3">
+          <mat-icon class="text-4xl text-zinc-600">search_off</mat-icon>
+          <h3 class="text-base font-semibold text-zinc-300 font-mono">未找到匹配的 MIME 格式</h3>
+          <p class="text-xs text-zinc-500 max-w-md mx-auto">
+            在当前分类或搜索筛选条件下未查询到记录，请切换分类标签或清除搜索关键字。
+          </p>
+        </div>
+      }
+
+    } @else {
+      <!-- Initial State Welcome Guide -->
+      <div class="bg-zinc-900/40 border border-zinc-800/80 rounded-2xl p-8 sm:p-12 text-center max-w-3xl mx-auto space-y-6">
+        <div class="w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400 mx-auto">
+          <mat-icon class="text-3xl">developer_mode</mat-icon>
+        </div>
+
+        <div class="space-y-2">
+          <h3 class="text-lg font-bold text-zinc-100 font-mono">
+            Windows 剪贴板多 MIME 格式剖析器
+          </h3>
+          <p class="text-xs text-zinc-400 max-w-xl mx-auto leading-relaxed">
+            开发者调试工具：当您在 Windows 或 macOS 系统中复制内容（如 Word 富文本、Chrome 网页、JSON、文件或图片）时，剪贴板会同时存储多种 MIME 格式。本工具会一次性自动解析并展示所有原生 MIME 格式源码及 Hex 内存块。
+          </p>
+        </div>
+
+        <!-- Capability Badges -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-left pt-2 border-t border-zinc-800/80 text-xs font-mono">
+          <div class="p-3 bg-zinc-900 rounded-xl border border-zinc-800">
+            <div class="font-semibold text-indigo-400 flex items-center gap-1 mb-1">
+              <mat-icon class="text-sm">article</mat-icon>
+              多格式同析
+            </div>
+            <div class="text-zinc-500 text-[11px]">有多少格式解析多少，动态加载</div>
+          </div>
+
+          <div class="p-3 bg-zinc-900 rounded-xl border border-zinc-800">
+            <div class="font-semibold text-emerald-400 flex items-center gap-1 mb-1">
+              <mat-icon class="text-sm">code</mat-icon>
+              只显示源码
+            </div>
+            <div class="text-zinc-500 text-[11px]">不渲染 DOM，精准调试原生 Header</div>
+          </div>
+
+          <div class="p-3 bg-zinc-900 rounded-xl border border-zinc-800">
+            <div class="font-semibold text-amber-400 flex items-center gap-1 mb-1">
+              <mat-icon class="text-sm">memory</mat-icon>
+              二进制占位
+            </div>
+            <div class="text-zinc-500 text-[11px]">不乱码，Hex + 魔数特征定位</div>
+          </div>
+
+          <div class="p-3 bg-zinc-900 rounded-xl border border-zinc-800">
+            <div class="font-semibold text-cyan-400 flex items-center gap-1 mb-1">
+              <mat-icon class="text-sm">unfold_more</mat-icon>
+              高度自适应
+            </div>
+            <div class="text-zinc-500 text-[11px]">短展示紧凑，长内容滚动与展开</div>
+          </div>
+        </div>
+
+      </div>
+    }
+
+  </main>
+</div>
