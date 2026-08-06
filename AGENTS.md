@@ -10,7 +10,7 @@ Windows Clipboard MIME Inspector is a single-screen Angular application built to
 
 - **Framework**: Angular 21 (Zoneless, Standalone Components, Signals state management)
 - **Styling**: Tailwind CSS v4 with Angular Material icons (`<mat-icon>`)
-- **Clipboard API**: `navigator.clipboard.read()`, `ClipboardItem`, `ClipboardEvent` interceptors, and drag-and-drop file readers
+- **Clipboard API**: `navigator.clipboard.read()`, `ClipboardItem`, `ClipboardEvent` interceptors with `event.preventDefault()` event isolation, and drag-and-drop file readers
 - **State Flow**: Reactive signals in `src/app/services/clipboard.service.ts`
 
 ## Build & Test Commands
@@ -23,10 +23,11 @@ Windows Clipboard MIME Inspector is a single-screen Angular application built to
 
 1. **No Live Rendering**: Always show raw source code (`<code>`, `<pre>`) for HTML/XML/JSON payloads. Do NOT render untrusted HTML as DOM elements.
 2. **Binary Safety**: Non-text bytes must be passed through the Hex dump generator (`generateHexDump`) and magic signature analyzer rather than decoded as garbled strings.
-3. **Zoneless Signals**: Do NOT import `zone.js`. Use Angular `signal()`, `computed()`, and `effect()`.
-4. **Standalone Components**: Do NOT set `standalone: true` (default in Angular 20+). Place imports directly inside the `@Component` decorator's `imports` array.
-5. **No NgModel**: Use reactive signals or native event handlers (`(input)`, `(paste)`).
-6. **Documentation Maintenance**: Always update `README.md`, `AGENTS.md`, and files under `docs/` whenever project features or architectures are updated.
+3. **Event Isolation**: On native `(paste)` events in text input elements, `event.preventDefault()` and `event.stopPropagation()` must be invoked to prevent standard textarea `(input)` events from replacing multi-format MIME sessions with plain text.
+4. **Zoneless Signals**: Do NOT import `zone.js`. Use Angular `signal()`, `computed()`, and `effect()`.
+5. **Standalone Components**: Do NOT set `standalone: true` (default in Angular 20+). Place imports directly inside the `@Component` decorator's `imports` array.
+6. **No NgModel**: Use reactive signals or native event handlers (`(input)`, `(paste)`).
+7. **Documentation Maintenance**: Always update `README.md`, `AGENTS.md`, and files under `docs/` whenever project features or architectures are updated.
 
 ## Security Considerations
 

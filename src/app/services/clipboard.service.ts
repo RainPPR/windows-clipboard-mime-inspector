@@ -109,8 +109,7 @@ export class ClipboardService {
         try {
           const text = await navigator.clipboard.readText();
           if (text) {
-            const format = this.createPlainTextFormat(text);
-            this.setSession('clipboard-api', [format]);
+            this.processManualTextInput(text);
             this.isLoading.set(false);
             return;
           }
@@ -144,37 +143,82 @@ export class ClipboardService {
       const parsedFormats: ClipboardFormat[] = [];
       const types = Array.from(clipboardData.types || []);
 
-      // Process items if available
+      // 1. Process files from items first
       if (clipboardData.items && clipboardData.items.length > 0) {
-        for (let i = 0; i < clipboardData.items.length; i++) {
-          const item = clipboardData.items[i];
-          const type = item.type || `format/unknown-${i}`;
-
-          if (item.kind === 'string') {
-            await new Promise<void>((resolve) => {
-              item.getAsString((str) => {
-                parsedFormats.push(this.createStringFormat(str, type));
-                resolve();
-              });
-            });
-          } else if (item.kind === 'file') {
+        for (const item of Array.from(clipboardData.items)) {
+          if (item.kind === 'file') {
             const file = item.getAsFile();
             if (file) {
-              const format = await this.processBlobToFormat(file, type || file.type || 'application/octet-stream');
+              const mime = file.type || item.type || 'application/octet-stream';
+              const format = await this.processBlobToFormat(file, mime);
               parsedFormats.push(format);
             }
           }
         }
       }
 
-      // Fallback: Check types array if items missed something
-      for (const t of types) {
-        if (!parsedFormats.some((f) => f.mimeType === t)) {
+      // 2. Extract all string types from clipboardData.types and standard Windows format strings
+      const standardFormats = ['text/plain', 'text/html', 'text/rtf', 'text/uri-list', 'text/x-moz-url', 'HTML Format'];
+      const candidateTypes = Array.from(new Set([...types, ...standardFormats]));
+
+      for (const t of candidateTypes) {
+        if (!t) continue;
+        try {
           const data = clipboardData.getData(t);
-          if (data) {
+          if (data && !parsedFormats.some((f) => f.mimeType === t)) {
             parsedFormats.push(this.createStringFormat(data, t));
           }
+        } catch {
+          // format access error ignored
         }
+      }
+
+      // 3. Extract items string content if any type was missing
+      if (clipboardData.items && clipboardData.items.length > 0) {
+        for (const item of Array.from(clipboardData.items)) {
+          if (item.kind === 'string' && item.type) {
+            if (!parsedFormats.some((f) => f.mimeType === item.type)) {
+              await new Promise<void>((resolve) => {
+                item.getAsString((str) => {
+                  if (str) {
+                    parsedFormats.push(this.createStringFormat(str, item.type));
+                  }
+                  resolve();
+                });
+              });
+            }
+          }
+        }
+      }
+
+      // 4. Smart derivation of rich formats if primary text contains embedded format structures
+      const htmlFmt = parsedFormats.find((f) => f.mimeType === 'text/html' || f.mimeType === 'HTML Format');
+      const plainFmt = parsedFormats.find((f) => f.mimeType === 'text/plain');
+      const primaryText = htmlFmt?.textContent || plainFmt?.textContent || '';
+
+      // Auto derive JSON format if valid JSON string
+      if (primaryText && !parsedFormats.some((f) => f.mimeType === 'application/json')) {
+        try {
+          JSON.parse(primaryText.trim());
+          parsedFormats.push(this.createStringFormat(primaryText, 'application/json'));
+        } catch (jsonErr: unknown) {
+          console.debug('Not a valid JSON string:', jsonErr);
+        }
+      }
+
+      // Auto derive RTF format if text begins with {\rtf
+      if (primaryText && primaryText.trim().startsWith('{\\rtf') && !parsedFormats.some((f) => f.mimeType === 'text/rtf')) {
+        parsedFormats.push(this.createStringFormat(primaryText, 'text/rtf'));
+      }
+
+      // Auto derive HTML format if plain text contains HTML tag structure
+      if (primaryText && primaryText.includes('<') && primaryText.includes('>') && !parsedFormats.some((f) => f.mimeType.includes('html'))) {
+        parsedFormats.push(this.createStringFormat(primaryText, 'text/html'));
+      }
+
+      // If text/html contains Windows HTML headers (Version:0.9 / StartHTML:...), make sure HTML Format is present
+      if (htmlFmt?.textContent && htmlFmt.textContent.includes('StartHTML:') && !parsedFormats.some((f) => f.mimeType === 'HTML Format')) {
+        parsedFormats.push(this.createStringFormat(htmlFmt.textContent, 'HTML Format'));
       }
 
       if (parsedFormats.length > 0) {

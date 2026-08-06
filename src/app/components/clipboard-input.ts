@@ -141,6 +141,11 @@ export class ClipboardInputComponent {
   // Global paste listener so anywhere the user presses Ctrl+V on the page captures data
   @HostListener('window:paste', ['$event'])
   onGlobalPaste(event: ClipboardEvent): void {
+    const target = event.target as HTMLElement;
+    if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') && target !== this.pasteTextArea?.nativeElement) {
+      return;
+    }
+    event.preventDefault();
     this.clipboardService.processPasteEvent(event);
   }
 
@@ -149,13 +154,17 @@ export class ClipboardInputComponent {
   }
 
   onNativePaste(event: ClipboardEvent): void {
+    event.preventDefault();
     event.stopPropagation();
+    if (this.pasteTextArea?.nativeElement) {
+      this.pasteTextArea.nativeElement.value = '';
+    }
     this.clipboardService.processPasteEvent(event);
   }
 
   onTextInput(event: Event): void {
     const target = event.target as HTMLTextAreaElement;
-    if (target.value) {
+    if (target.value && target.value.trim()) {
       this.clipboardService.processManualTextInput(target.value);
       target.value = '';
     }
